@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/nicholasgasior/envport/internal/store"
 	"github.com/spf13/cobra"
+
+	"envport/internal/store"
 )
 
 func NewRootCmd() *cobra.Command {
@@ -25,6 +26,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newCopyCmd(m))
 	root.AddCommand(newExportCmd(m))
 	root.AddCommand(newDiffCmd(m))
+	root.AddCommand(newImportCmd(m))
 
 	return root
 }
