@@ -22,11 +22,8 @@ func newLoadCmd(mgr *store.Manager) *cobra.Command {
 			}
 			out := cmd.OutOrStdout()
 			for k, v := range snap.Vars {
-				switch shellFmt {
-				case "fish":
-					fmt.Fprintf(out, "set -x %s %q\n", k, v)
-				default:
-					fmt.Fprintf(out, "export %s=%q\n", k, v)
+				if err := printExport(out, shellFmt, k, v); err != nil {
+					return fmt.Errorf("load: writing output: %w", err)
 				}
 			}
 			return nil
@@ -34,4 +31,15 @@ func newLoadCmd(mgr *store.Manager) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&shellFmt, "shell", "bash", "Shell format: bash, fish")
 	return cmd
+}
+
+func printExport(out interface{ Write([]byte) (int, error) }, shell, k, v string) error {
+	var err error
+	switch shell {
+	case "fish":
+		_, err = fmt.Fprintf(out, "set -x %s %q\n", k, v)
+	default:
+		_, err = fmt.Fprintf(out, "export %s=%q\n", k, v)
+	}
+	return err
 }
