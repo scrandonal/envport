@@ -8,7 +8,7 @@ import (
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "envport",
-		Short: "Snapshot and restore environment variable sets across projects",
+		Short: "Snapshot and restore environment variable sets",
 	}
 
 	s, err := store.Default()
@@ -24,6 +24,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newRenameCmd(m))
 	root.AddCommand(newCopyCmd(m))
 	root.AddCommand(newExportCmd(m))
+	root.AddCommand(newDiffCmd(m))
 
 	return root
 }
