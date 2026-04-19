@@ -64,3 +64,21 @@ func TestSetNoteNotFound(t *testing.T) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
+
+func TestSetNoteOverwrite(t *testing.T) {
+	s := newTempStore(t)
+	if err := s.Init("proj"); err != nil {
+		t.Fatal(err)
+	}
+	s.SetNote("proj", "first")
+	if err := s.SetNote("proj", "second"); err != nil {
+		t.Fatal(err)
+	}
+	note, err := s.GetNote("proj")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if note != "second" {
+		t.Errorf("expected 'second', got %q", note)
+	}
+}
