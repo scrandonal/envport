@@ -20,6 +20,9 @@ func newLoadCmd(mgr *store.Manager) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load: %w", err)
 			}
+			if err := validateShell(shellFmt); err != nil {
+				return err
+			}
 			out := cmd.OutOrStdout()
 			for k, v := range snap.Vars {
 				if err := printExport(out, shellFmt, k, v); err != nil {
@@ -31,6 +34,16 @@ func newLoadCmd(mgr *store.Manager) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&shellFmt, "shell", "bash", "Shell format: bash, fish")
 	return cmd
+}
+
+// validateShell returns an error if the given shell format is not supported.
+func validateShell(shell string) error {
+	switch shell {
+	case "bash", "fish":
+		return nil
+	default:
+		return fmt.Errorf("unsupported shell format %q: must be one of: bash, fish", shell)
+	}
 }
 
 func printExport(out interface{ Write([]byte) (int, error) }, shell, k, v string) error {
