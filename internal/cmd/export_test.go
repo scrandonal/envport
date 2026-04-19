@@ -71,3 +71,16 @@ func TestExportCmdRequiresArg(t *testing.T) {
 		t.Fatal("expected error when no arg provided")
 	}
 }
+
+func TestExportCmdInvalidFormat(t *testing.T) {
+	m := &mockManager{
+		loadFn: func(name string) (*snapshot.Snapshot, error) {
+			return &snapshot.Snapshot{Vars: map[string]string{"KEY": "value"}}, nil
+		},
+	}
+	cmd := newExportCmd(m)
+	cmd.SetArgs([]string{"mysnap", "--format", "invalid"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("expected error for invalid format")
+	}
+}
