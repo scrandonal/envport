@@ -28,7 +28,11 @@ func newListCmd(mgr *store.Manager) *cobra.Command {
 			for _, n := range names {
 				fmt.Fprintln(w, n)
 			}
-			return w.Flush()
+			if err := w.Flush(); err != nil {
+				return fmt.Errorf("list: flushing output: %w", err)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "\n%d snapshot(s) total.\n", len(names))
+			return nil
 		},
 	}
 }
