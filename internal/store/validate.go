@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"regexp"
+	"sort"
 )
 
 var validKeyRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
@@ -32,6 +33,7 @@ func (m *Manager) Validate(name string) error {
 		}
 	}
 	if len(bad) > 0 {
+		sort.Strings(bad)
 		return &ValidationError{InvalidKeys: bad}
 	}
 	return nil
