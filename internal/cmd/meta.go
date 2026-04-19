@@ -16,6 +16,10 @@ func newMetaCmd(m Manager) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
+			if clear && len(args) == 2 {
+				return fmt.Errorf("cannot use --clear with a description argument")
+			}
+
 			if clear {
 				return m.ClearMeta(name)
 			}
