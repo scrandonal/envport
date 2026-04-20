@@ -38,3 +38,24 @@ func (m *Manager) ApplyTemplate(templateName, snapshotName string) error {
 	}
 	return m.store.Save(snapshotName, vars)
 }
+
+// RenameTemplate renames an existing template by loading it under the old name,
+// saving it under the new name, and deleting the old one.
+// Returns an error if the old template does not exist or the new name is already taken.
+func (m *Manager) RenameTemplate(oldName, newName string) error {
+	if _, err := m.store.LoadTemplate(newName); err == nil {
+		return fmt.Errorf("template %q already exists", newName)
+	}
+	tmpl, err := m.store.LoadTemplate(oldName)
+	if err != nil {
+		return fmt.Errorf("load template %q: %w", oldName, err)
+	}
+	tmpl.Name = newName
+	if err := m.store.SaveTemplate(tmpl); err != nil {
+		return fmt.Errorf("save template %q: %w", newName, err)
+	}
+	if err := m.store.DeleteTemplate(oldName); err != nil {
+		return fmt.Errorf("delete template %q: %w", oldName, err)
+	}
+	return nil
+}
