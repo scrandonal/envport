@@ -32,6 +32,11 @@ envport list
 envport delete myproject
 ```
 
+**Show the contents of a snapshot:**
+```bash
+envport show myproject
+```
+
 Snapshots are stored in `~/.envport/` as simple JSON files, making them easy to inspect or version control.
 
 ### Example Workflow
