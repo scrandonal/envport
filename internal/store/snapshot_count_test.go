@@ -74,3 +74,31 @@ func TestClearCountIdempotent(t *testing.T) {
 		t.Fatalf("clear nonexistent should not error: %v", err)
 	}
 }
+
+func TestIncrementLoadMultipleSnapshots(t *testing.T) {
+	base := newCountStore(t)
+
+	// Increments to one snapshot should not affect counts of another.
+	if err := store.IncrementLoad(base, "snap1"); err != nil {
+		t.Fatalf("increment load snap1: %v", err)
+	}
+	if err := store.IncrementSave(base, "snap2"); err != nil {
+		t.Fatalf("increment save snap2: %v", err)
+	}
+
+	c1, err := store.GetCount(base, "snap1")
+	if err != nil {
+		t.Fatalf("get count snap1: %v", err)
+	}
+	if c1.Loads != 1 || c1.Saves != 0 {
+		t.Errorf("snap1: expected 1 load 0 saves, got %+v", c1)
+	}
+
+	c2, err := store.GetCount(base, "snap2")
+	if err != nil {
+		t.Fatalf("get count snap2: %v", err)
+	}
+	if c2.Loads != 0 || c2.Saves != 1 {
+		t.Errorf("snap2: expected 0 loads 1 save, got %+v", c2)
+	}
+}
