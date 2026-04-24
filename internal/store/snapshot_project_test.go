@@ -1,75 +1,79 @@
 package store
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 )
 
 func newProjectStore(t *testing.T) string {
 	t.Helper()
-	s := newTempStore(t)
-	if err := s.Init(); err != nil {
-		t.Fatalf("init: %v", err)
+	dir, err := os.MkdirTemp("", "envport-project-*")
+	if err != nil {
+		t.Fatal(err)
 	}
-	return s.base
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	return dir
+}
+
+func touchSnapshotForProject(t *testing.T, base, name string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(base, name+".json"), []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestSetAndGetProject(t *testing.T) {
 	base := newProjectStore(t)
-	touchSnapshot(t, base, "mysnap")
+	touchSnapshotForProject(t, base, "dev")
 
-	info := ProjectInfo{Name: "myproject", URL: "https://github.com/example/myproject"}
-	if err := SetProject(base, "mysnap", info); err != nil {
+	if err := SetProject(base, "dev", "myapp"); err != nil {
 		t.Fatalf("SetProject: %v", err)
 	}
-
-	got, err := GetProject(base, "mysnap")
+	p, err := GetProject(base, "dev")
 	if err != nil {
 		t.Fatalf("GetProject: %v", err)
 	}
-	if got.Name != info.Name || got.URL != info.URL {
-		t.Errorf("got %+v, want %+v", got, info)
+	if p != "myapp" {
+		t.Errorf("expected myapp, got %q", p)
 	}
 }
 
 func TestGetProjectMissing(t *testing.T) {
 	base := newProjectStore(t)
-	touchSnapshot(t, base, "snap")
-
-	info, err := GetProject(base, "snap")
+	p, err := GetProject(base, "ghost")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if info.Name != "" {
-		t.Errorf("expected empty, got %+v", info)
+	if p != "" {
+		t.Errorf("expected empty, got %q", p)
 	}
 }
 
 func TestClearProject(t *testing.T) {
 	base := newProjectStore(t)
-	touchSnapshot(t, base, "snap")
+	touchSnapshotForProject(t, base, "dev")
+	_ = SetProject(base, "dev", "myapp")
 
-	_ = SetProject(base, "snap", ProjectInfo{Name: "proj"})
-	if err := ClearProject(base, "snap"); err != nil {
+	if err := ClearProject(base, "dev"); err != nil {
 		t.Fatalf("ClearProject: %v", err)
 	}
-	info, _ := GetProject(base, "snap")
-	if info.Name != "" {
-		t.Errorf("expected cleared, got %+v", info)
+	p, _ := GetProject(base, "dev")
+	if p != "" {
+		t.Errorf("expected empty after clear, got %q", p)
 	}
 }
 
 func TestClearProjectIdempotent(t *testing.T) {
 	base := newProjectStore(t)
-	touchSnapshot(t, base, "snap")
-
-	if err := ClearProject(base, "snap"); err != nil {
-		t.Errorf("expected no error on missing project file, got: %v", err)
+	if err := ClearProject(base, "nope"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
 }
 
 func TestSetProjectNotFound(t *testing.T) {
 	base := newProjectStore(t)
-	err := SetProject(base, "ghost", ProjectInfo{Name: "proj"})
+	err := SetProject(base, "missing", "myapp")
 	if err != ErrNotFound {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -77,15 +81,14 @@ func TestSetProjectNotFound(t *testing.T) {
 
 func TestListByProject(t *testing.T) {
 	base := newProjectStore(t)
-	touchSnapshot(t, base, "snap1")
-	touchSnapshot(t, base, "snap2")
-	touchSnapshot(t, base, "snap3")
+	for _, name := range []string{"dev", "staging", "prod"} {
+		touchSnapshotForProject(t, base, name)
+	}
+	_ = SetProject(base, "dev", "myapp")
+	_ = SetProject(base, "staging", "myapp")
+	_ = SetProject(base, "prod", "otherapp")
 
-	_ = SetProject(base, "snap1", ProjectInfo{Name: "alpha"})
-	_ = SetProject(base, "snap2", ProjectInfo{Name: "alpha"})
-	_ = SetProject(base, "snap3", ProjectInfo{Name: "beta"})
-
-	results, err := ListByProject(base, "alpha")
+	results, err := ListByProject(base, "myapp")
 	if err != nil {
 		t.Fatalf("ListByProject: %v", err)
 	}

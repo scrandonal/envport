@@ -7,39 +7,34 @@ import (
 	"path/filepath"
 )
 
-type ProjectInfo struct {
-	Name string `json:"name"`
-	URL  string `json:"url,omitempty"`
-}
-
 func projectPath(base, name string) string {
 	return filepath.Join(base, name+".project.json")
 }
 
-func SetProject(base, name string, info ProjectInfo) error {
+func SetProject(base, name, project string) error {
 	if _, err := os.Stat(filepath.Join(base, name+".json")); errors.Is(err, os.ErrNotExist) {
 		return ErrNotFound
 	}
-	data, err := json.MarshalIndent(info, "", "  ")
+	data, err := json.Marshal(project)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(projectPath(base, name), data, 0600)
 }
 
-func GetProject(base, name string) (ProjectInfo, error) {
+func GetProject(base, name string) (string, error) {
 	data, err := os.ReadFile(projectPath(base, name))
 	if errors.Is(err, os.ErrNotExist) {
-		return ProjectInfo{}, nil
+		return "", nil
 	}
 	if err != nil {
-		return ProjectInfo{}, err
+		return "", err
 	}
-	var info ProjectInfo
-	if err := json.Unmarshal(data, &info); err != nil {
-		return ProjectInfo{}, err
+	var project string
+	if err := json.Unmarshal(data, &project); err != nil {
+		return "", err
 	}
-	return info, nil
+	return project, nil
 }
 
 func ClearProject(base, name string) error {
@@ -50,12 +45,12 @@ func ClearProject(base, name string) error {
 	return err
 }
 
-func ListByProject(base, projectName string) ([]string, error) {
+func ListByProject(base, project string) ([]string, error) {
 	entries, err := os.ReadDir(base)
 	if err != nil {
 		return nil, err
 	}
-	var matches []string
+	var results []string
 	for _, e := range entries {
 		if filepath.Ext(e.Name()) != ".json" {
 			continue
@@ -68,13 +63,13 @@ func ListByProject(base, projectName string) ([]string, error) {
 		if filepath.Ext(base2) != "" {
 			continue
 		}
-		info, err := GetProject(base, base2)
+		p, err := GetProject(base, base2)
 		if err != nil {
 			continue
 		}
-		if info.Name == projectName {
-			matches = append(matches, base2)
+		if p == project {
+			results = append(results, base2)
 		}
 	}
-	return matches, nil
+	return results, nil
 }
