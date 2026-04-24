@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -12,8 +13,11 @@ func projectPath(base, name string) string {
 }
 
 func SetProject(base, name, project string) error {
-	if _, err := os.Stat(filepath.Join(base, name+".json")); errors.Is(err, os.ErrNotExist) {
-		return ErrNotFound
+	if !snapshotExists(base, name) {
+		return fmt.Errorf("snapshot %q not found", name)
+	}
+	if project == "" {
+		return errors.New("project name must not be empty")
 	}
 	data, err := json.Marshal(project)
 	if err != nil {
@@ -24,10 +28,10 @@ func SetProject(base, name, project string) error {
 
 func GetProject(base, name string) (string, error) {
 	data, err := os.ReadFile(projectPath(base, name))
-	if errors.Is(err, os.ErrNotExist) {
-		return "", nil
-	}
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
 		return "", err
 	}
 	var project string
@@ -39,10 +43,10 @@ func GetProject(base, name string) (string, error) {
 
 func ClearProject(base, name string) error {
 	err := os.Remove(projectPath(base, name))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
-	return err
+	return nil
 }
 
 func ListByProject(base, project string) ([]string, error) {
@@ -52,24 +56,20 @@ func ListByProject(base, project string) ([]string, error) {
 	}
 	var results []string
 	for _, e := range entries {
-		if filepath.Ext(e.Name()) != ".json" {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".json" {
 			continue
 		}
 		ext := filepath.Ext(e.Name())
-		if ext != ".json" {
-			continue
-		}
-		base2 := e.Name()[:len(e.Name())-len(".json")]
+		base2 := e.Name()[:len(e.Name())-len(ext)]
 		if filepath.Ext(base2) != "" {
 			continue
 		}
-		p, err := GetProject(base, base2)
-		if err != nil {
+		snap := base2
+		p, err := GetProject(base, snap)
+		if err != nil || p != project {
 			continue
 		}
-		if p == project {
-			results = append(results, base2)
-		}
+		results = append(results, snap)
 	}
 	return results, nil
 }
