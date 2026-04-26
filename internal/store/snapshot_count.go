@@ -7,23 +7,33 @@ import (
 	"path/filepath"
 )
 
+// AccessCount tracks how many times a snapshot has been loaded or saved.
 type AccessCount struct {
 	Loads  int `json:"loads"`
 	Saves  int `json:"saves"`
+}
+
+// Total returns the combined number of loads and saves.
+func (c AccessCount) Total() int {
+	return c.Loads + c.Saves
 }
 
 func countPath(base, name string) string {
 	return filepath.Join(base, name+".count.json")
 }
 
+// IncrementLoad increments the load counter for the named snapshot.
 func IncrementLoad(base, name string) error {
 	return modifyCount(base, name, func(c *AccessCount) { c.Loads++ })
 }
 
+// IncrementSave increments the save counter for the named snapshot.
 func IncrementSave(base, name string) error {
 	return modifyCount(base, name, func(c *AccessCount) { c.Saves++ })
 }
 
+// GetCount returns the current AccessCount for the named snapshot.
+// If no count file exists, an empty AccessCount is returned without error.
 func GetCount(base, name string) (AccessCount, error) {
 	path := countPath(base, name)
 	data, err := os.ReadFile(path)
@@ -40,6 +50,8 @@ func GetCount(base, name string) (AccessCount, error) {
 	return c, nil
 }
 
+// ClearCount removes the count file for the named snapshot.
+// If no count file exists, ClearCount returns nil.
 func ClearCount(base, name string) error {
 	path := countPath(base, name)
 	err := os.Remove(path)
