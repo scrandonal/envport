@@ -99,3 +99,20 @@ func TestListByColor(t *testing.T) {
 		t.Errorf("expected 2 red snapshots, got %d: %v", len(names), names)
 	}
 }
+
+func TestListByColorEmpty(t *testing.T) {
+	base := newColorStore(t)
+	for _, n := range []string{"x", "y"} {
+		touchSnapshotForColor(t, base, n)
+	}
+	_ = SetColor(base, "x", "blue")
+	_ = SetColor(base, "y", "blue")
+
+	names, err := ListByColor(base, "red")
+	if err != nil {
+		t.Fatalf("ListByColor: %v", err)
+	}
+	if len(names) != 0 {
+		t.Errorf("expected 0 red snapshots, got %d: %v", len(names), names)
+	}
+}
