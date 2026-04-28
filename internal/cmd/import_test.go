@@ -90,6 +90,20 @@ func TestImportCmdRequiresArg(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestImportCmdMissingFile verifies that an error is returned when the
+// specified input file does not exist.
+func TestImportCmdMissingFile(t *testing.T) {
+	m := &mockManager{}
+	cmd := newImportCmd(m)
+
+	cmd.SetArgs([]string{"snap", "--file", "/nonexistent/path/input.env"})
+	cmd.SetOut(&bytes.Buffer{})
+
+	err := cmd.Execute()
+	assert.Error(t, err)
+	assert.Nil(t, m.savedSnap)
+}
+
 func writeTempFile(t *testing.T, content string) string {
 	t.Helper()
 	dir := t.TempDir()
